@@ -1,0 +1,697 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Movie Night Picker</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Segoe UI', Arial, sans-serif;
+      background: #0f0f1a;
+      color: #e0e0f0;
+      min-height: 100vh;
+      padding: 2rem 1rem;
+    }
+
+    .app {
+      max-width: 720px;
+      margin: 0 auto;
+    }
+
+    h1 {
+      font-size: 2rem;
+      font-weight: 700;
+      color: #fff;
+      margin-bottom: 4px;
+      letter-spacing: -0.5px;
+    }
+
+    .subtitle {
+      font-size: 15px;
+      color: #8888aa;
+      margin-bottom: 2rem;
+    }
+
+    /* Step Indicator */
+    .step-indicator {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 2rem;
+    }
+    .step {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 13px;
+      font-weight: 600;
+      border: 2px solid #333355;
+      color: #8888aa;
+      background: #1a1a2e;
+      transition: all 0.3s;
+    }
+    .step.active { background: #4f46e5; border-color: #4f46e5; color: #fff; }
+    .step.done   { background: #16a34a; border-color: #16a34a; color: #fff; }
+    .step-line   { flex: 1; height: 2px; background: #333355; border-radius: 2px; }
+
+    /* Section Label */
+    .section-label {
+      font-size: 11px;
+      font-weight: 700;
+      color: #6666aa;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      margin-bottom: 10px;
+      margin-top: 1.5rem;
+    }
+
+    /* Card */
+    .card {
+      background: #1a1a2e;
+      border: 1px solid #2a2a45;
+      border-radius: 14px;
+      padding: 1rem 1.25rem;
+      margin-bottom: 1rem;
+    }
+
+    /* Members */
+    .member-row {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      margin-bottom: 14px;
+      flex-wrap: wrap;
+    }
+    .avatar {
+      width: 38px;
+      height: 38px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+      font-weight: 700;
+      flex-shrink: 0;
+      margin-top: 2px;
+    }
+    .member-name {
+      font-size: 14px;
+      font-weight: 600;
+      color: #e0e0f0;
+      min-width: 70px;
+      padding-top: 10px;
+    }
+    .chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      flex: 1;
+    }
+    .chip {
+      font-size: 12px;
+      padding: 5px 12px;
+      border-radius: 999px;
+      cursor: pointer;
+      border: 1px solid #333355;
+      color: #8888aa;
+      background: #13132a;
+      transition: all 0.15s;
+      user-select: none;
+    }
+    .chip:hover { border-color: #4f46e5; color: #c0c0ff; }
+    .chip.selected { background: #4f46e5; border-color: #4f46e5; color: #fff; }
+    .remove-btn {
+      margin-left: auto;
+      font-size: 20px;
+      color: #555577;
+      cursor: pointer;
+      background: none;
+      border: none;
+      padding: 4px 8px;
+      line-height: 1;
+      border-radius: 6px;
+      transition: color 0.15s;
+    }
+    .remove-btn:hover { color: #e24b4a; }
+
+    /* Add Member Row */
+    .add-member-row {
+      display: flex;
+      gap: 10px;
+      margin-top: 6px;
+    }
+    .add-member-row input {
+      flex: 1;
+      font-size: 14px;
+      padding: 0 14px;
+      height: 40px;
+      border-radius: 10px;
+      border: 1px solid #333355;
+      background: #13132a;
+      color: #e0e0f0;
+      outline: none;
+      font-family: inherit;
+      transition: border-color 0.15s;
+    }
+    .add-member-row input:focus { border-color: #4f46e5; }
+    .add-member-row input::placeholder { color: #555577; }
+
+    /* Buttons */
+    .btn {
+      height: 40px;
+      padding: 0 18px;
+      font-size: 14px;
+      font-weight: 600;
+      border-radius: 10px;
+      border: none;
+      cursor: pointer;
+      font-family: inherit;
+      transition: all 0.15s;
+    }
+    .btn-primary {
+      background: #4f46e5;
+      color: #fff;
+    }
+    .btn-primary:hover { background: #4338ca; transform: translateY(-1px); }
+    .btn-secondary {
+      background: #1a1a2e;
+      color: #c0c0ff;
+      border: 1px solid #333355;
+    }
+    .btn-secondary:hover { background: #22223a; }
+    .pick-btn {
+      width: 100%;
+      height: 48px;
+      font-size: 16px;
+      margin-top: 1rem;
+      border-radius: 12px;
+    }
+
+    /* Mood Grid */
+    .mood-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
+      gap: 10px;
+      margin-bottom: 1rem;
+    }
+    .mood-card {
+      border: 1px solid #2a2a45;
+      border-radius: 12px;
+      padding: 14px 10px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.15s;
+      background: #1a1a2e;
+    }
+    .mood-card:hover { border-color: #4f46e5; transform: translateY(-2px); }
+    .mood-card.selected { border: 2px solid #4f46e5; background: #1e1b4b; }
+    .mood-icon { font-size: 26px; display: block; margin-bottom: 6px; }
+    .mood-name { font-size: 12px; color: #c0c0ff; font-weight: 500; }
+
+    /* Result Card */
+    .result-card {
+      border-radius: 14px;
+      border: 1px solid #2a2a45;
+      overflow: hidden;
+      margin-bottom: 1rem;
+    }
+    .result-header {
+      background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+      padding: 1.25rem 1.5rem;
+    }
+    .result-header .label {
+      font-size: 11px;
+      color: #c4b5fd;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+    .result-header .title {
+      font-size: 22px;
+      font-weight: 700;
+      color: #fff;
+      margin-top: 4px;
+    }
+    .result-header .meta {
+      font-size: 13px;
+      color: #c4b5fd;
+      margin-top: 4px;
+    }
+    .result-body {
+      background: #1a1a2e;
+      padding: 1.25rem 1.5rem;
+    }
+    .result-desc {
+      font-size: 14px;
+      color: #9999bb;
+      line-height: 1.7;
+      margin-bottom: 14px;
+    }
+    .vote-section { border-top: 1px solid #2a2a45; padding-top: 14px; }
+    .vote-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 8px;
+    }
+    .vote-bar-wrap {
+      flex: 1;
+      height: 8px;
+      background: #13132a;
+      border-radius: 999px;
+      overflow: hidden;
+    }
+    .vote-bar {
+      height: 100%;
+      border-radius: 999px;
+      background: #16a34a;
+      transition: width 0.5s ease;
+    }
+    .vote-pct {
+      font-size: 13px;
+      font-weight: 600;
+      color: #e0e0f0;
+      min-width: 38px;
+      text-align: right;
+    }
+    .vote-btns { display: flex; gap: 6px; }
+    .vote-btn {
+      font-size: 12px;
+      padding: 5px 12px;
+      border-radius: 999px;
+      cursor: pointer;
+      border: 1px solid #333355;
+      background: #13132a;
+      color: #8888aa;
+      transition: all 0.15s;
+      font-family: inherit;
+    }
+    .vote-btn.up { background: #052e16; border-color: #16a34a; color: #4ade80; }
+    .vote-btn.up:hover { background: #14532d; }
+    .vote-btn.down { background: #1c0a0a; border-color: #e24b4a; color: #f87171; }
+    .vote-btn.down:hover { background: #2d1010; }
+
+    /* Suggestions Grid */
+    .suggestions-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+    @media (max-width: 480px) { .suggestions-grid { grid-template-columns: 1fr; } }
+    .suggest-card {
+      border: 1px solid #2a2a45;
+      border-radius: 12px;
+      padding: 12px 14px;
+      background: #1a1a2e;
+      transition: border-color 0.15s;
+    }
+    .suggest-card:hover { border-color: #4f46e5; }
+    .suggest-title { font-size: 14px; font-weight: 600; color: #e0e0f0; }
+    .suggest-meta { font-size: 12px; color: #6666aa; margin-top: 2px; }
+    .score-badge {
+      display: inline-block;
+      font-size: 11px;
+      padding: 3px 10px;
+      border-radius: 999px;
+      margin-top: 8px;
+      background: #052e16;
+      color: #4ade80;
+      border: 1px solid #16a34a;
+    }
+    .winner-badge {
+      display: inline-block;
+      font-size: 11px;
+      padding: 2px 10px;
+      border-radius: 999px;
+      background: #fde68a;
+      color: #78350f;
+      font-weight: 700;
+      margin-left: 8px;
+      vertical-align: middle;
+    }
+
+    .hidden { display: none; }
+    .empty {
+      text-align: center;
+      padding: 2rem;
+      color: #6666aa;
+      font-size: 14px;
+    }
+
+    .footer-btns {
+      display: flex;
+      gap: 10px;
+      margin-top: 1.5rem;
+      flex-wrap: wrap;
+    }
+  </style>
+</head>
+<body>
+<div class="app">
+
+  <h1>🎬 Movie Night Picker</h1>
+  <p class="subtitle">Add your group, pick genres and mood — get a movie everyone will love.</p>
+
+  <div class="step-indicator">
+    <div class="step active" id="s1">1</div>
+    <div class="step-line"></div>
+    <div class="step" id="s2">2</div>
+    <div class="step-line"></div>
+    <div class="step" id="s3">3</div>
+  </div>
+
+  <!-- SETUP PHASE -->
+  <div id="phase-setup">
+
+    <div class="section-label">Group members &amp; their genre preferences</div>
+    <div class="card" id="members-list"></div>
+    <div class="add-member-row">
+      <input type="text" id="member-input" placeholder="Enter name and press Add..." maxlength="20" />
+      <button class="btn btn-primary" onclick="addMember()">Add</button>
+    </div>
+
+    <div class="section-label">Tonight's mood</div>
+    <div class="mood-grid" id="mood-grid"></div>
+
+    <div class="section-label">Group genre picks</div>
+    <div class="card">
+      <div class="chips" id="global-genres"></div>
+    </div>
+
+    <button class="btn btn-primary pick-btn" onclick="pickMovies()">🎥 Find movies for the group</button>
+
+  </div>
+
+  <!-- RESULTS PHASE -->
+  <div id="phase-results" class="hidden">
+
+    <div class="section-label">⭐ Tonight's top pick</div>
+    <div id="winner-slot"></div>
+
+    <div class="section-label" style="margin-top:1.5rem;">Other suggestions — vote to re-rank</div>
+    <div class="suggestions-grid" id="other-movies"></div>
+
+    <div class="footer-btns">
+      <button class="btn btn-secondary" onclick="goBack()">← Change preferences</button>
+      <button class="btn btn-primary" onclick="resetAll()">🔄 Start over</button>
+    </div>
+
+  </div>
+
+</div>
+
+<script>
+  const GENRES = ['Action','Comedy','Drama','Sci-Fi','Horror','Romance','Thriller','Animation','Documentary','Fantasy','Mystery','Crime'];
+
+  const MOODS = [
+    {icon:'😂', name:'Laugh out loud'},
+    {icon:'😨', name:'Edge of seat'},
+    {icon:'😢', name:'Good cry'},
+    {icon:'🤯', name:'Mind-blowing'},
+    {icon:'💤', name:'Chill evening'},
+    {icon:'👨‍👩‍👧', name:'Family friendly'},
+  ];
+
+  const AVATARS      = ['#312e81','#065f46','#7c2d12','#701a75','#0c4a6e','#3b0764'];
+  const AVATAR_TEXT  = ['#c4b5fd','#6ee7b7','#fdba74','#f0abfc','#7dd3fc','#d8b4fe'];
+
+  const MOVIE_DB = {
+    Action: [
+      {title:'Mad Max: Fury Road',year:2015,genre:'Action',desc:'A high-octane chase through a post-apocalyptic wasteland as rebels fight a tyrannical warlord.',score:92},
+      {title:'John Wick',year:2014,genre:'Action',desc:'A retired hitman unleashes vengeance on the gang who took everything from him.',score:88},
+      {title:'The Dark Knight',year:2008,genre:'Action',desc:'Batman faces the chaotic genius of the Joker, who schemes to plunge Gotham into anarchy.',score:96},
+    ],
+    Comedy: [
+      {title:'The Grand Budapest Hotel',year:2014,genre:'Comedy',desc:'A legendary concierge and his lobby boy navigate murder and theft in a whimsical European hotel.',score:91},
+      {title:'Game Night',year:2018,genre:'Comedy',desc:'A group of friends realize their game night has turned into a real-life murder mystery.',score:84},
+      {title:'Superbad',year:2007,genre:'Comedy',desc:'Two best friends go on a wild adventure in their final weeks before college.',score:87},
+    ],
+    Drama: [
+      {title:'The Shawshank Redemption',year:1994,genre:'Drama',desc:'Two imprisoned men form a deep bond and find hope within the walls of a brutal prison.',score:97},
+      {title:'Parasite',year:2019,genre:'Drama',desc:'A poor family schemes their way into a wealthy household with shocking consequences.',score:95},
+      {title:'Whiplash',year:2014,genre:'Drama',desc:'A young drummer chases greatness under the brutal guidance of an uncompromising instructor.',score:93},
+    ],
+    'Sci-Fi': [
+      {title:'Arrival',year:2016,genre:'Sci-Fi',desc:'A linguist races to decode the language of mysterious alien visitors before tensions boil over.',score:94},
+      {title:'Interstellar',year:2014,genre:'Sci-Fi',desc:'Astronauts travel through a wormhole searching for a new home for humanity.',score:93},
+      {title:'Ex Machina',year:2014,genre:'Sci-Fi',desc:'A programmer evaluates a strikingly human AI — and questions who is really being tested.',score:89},
+    ],
+    Horror: [
+      {title:'Get Out',year:2017,genre:'Horror',desc:'A young man visits his girlfriend\'s family estate and uncovers deeply disturbing secrets.',score:93},
+      {title:'Hereditary',year:2018,genre:'Horror',desc:'A family unravels terrifying secrets about their ancestry following the grandmother\'s death.',score:89},
+      {title:'A Quiet Place',year:2018,genre:'Horror',desc:'A family must live in near-total silence to survive creatures that hunt by sound.',score:88},
+    ],
+    Romance: [
+      {title:'La La Land',year:2016,genre:'Romance',desc:'A jazz musician and an aspiring actress fall in love while chasing their dreams in Los Angeles.',score:91},
+      {title:'About Time',year:2013,genre:'Romance',desc:'A young man who can travel in time uses his gift to improve his love life — with bittersweet results.',score:88},
+      {title:'Crazy Rich Asians',year:2018,genre:'Romance',desc:'An American woman is stunned to discover just how wealthy her boyfriend\'s Singaporean family is.',score:85},
+    ],
+    Thriller: [
+      {title:'Gone Girl',year:2014,genre:'Thriller',desc:'A man becomes the prime suspect when his wife mysteriously vanishes on their anniversary.',score:92},
+      {title:'Knives Out',year:2019,genre:'Thriller',desc:'A sharp detective untangles the death of a wealthy patriarch surrounded by suspicious relatives.',score:91},
+      {title:'Prisoners',year:2013,genre:'Thriller',desc:'A desperate father takes the law into his own hands when two young girls go missing.',score:90},
+    ],
+    Animation: [
+      {title:'Spider-Man: Into the Spider-Verse',year:2018,genre:'Animation',desc:'Teen Miles Morales becomes Spider-Man and teams up with heroes from parallel universes.',score:97},
+      {title:'Spirited Away',year:2001,genre:'Animation',desc:'A ten-year-old girl gets lost in a mysterious spirit world and must find her way home.',score:97},
+      {title:'Coco',year:2017,genre:'Animation',desc:'A young boy journeys to the Land of the Dead to find his great-great-grandfather — and the truth.',score:94},
+    ],
+    Documentary: [
+      {title:'Free Solo',year:2018,genre:'Documentary',desc:'Alex Honnold attempts the impossible: a free solo climb of El Capitan with no ropes.',score:94},
+      {title:'The Last Dance',year:2020,genre:'Documentary',desc:'An intimate look at Michael Jordan and the Chicago Bulls\' legendary 1990s dynasty.',score:96},
+      {title:'Jiro Dreams of Sushi',year:2011,genre:'Documentary',desc:'An 85-year-old sushi master pursues perfection in his tiny Tokyo restaurant.',score:91},
+    ],
+    Fantasy: [
+      {title:'The Shape of Water',year:2017,genre:'Fantasy',desc:'A mute janitor falls in love with an amphibious creature held captive in a secret government lab.',score:90},
+      {title:"Pan's Labyrinth",year:2006,genre:'Fantasy',desc:'A young girl escapes post-war Spain by stepping into a dark and magical fairy-tale world.',score:95},
+      {title:'Everything Everywhere All at Once',year:2022,genre:'Fantasy',desc:'A laundromat owner discovers she must travel through the multiverse to save all of existence.',score:96},
+    ],
+    Mystery: [
+      {title:'Memento',year:2000,genre:'Mystery',desc:'A man with no short-term memory uses tattoos and Polaroids to hunt down his wife\'s killer.',score:95},
+      {title:'The Prestige',year:2006,genre:'Mystery',desc:'Two rival magicians push each other to obsessive and dangerous extremes.',score:93},
+      {title:'Zodiac',year:2007,genre:'Mystery',desc:'A cartoonist and a reporter become consumed by the search for the Zodiac Killer.',score:91},
+    ],
+    Crime: [
+      {title:'Goodfellas',year:1990,genre:'Crime',desc:'Henry Hill rises through the ranks of the mob and watches his world slowly collapse.',score:96},
+      {title:'No Country for Old Men',year:2007,genre:'Crime',desc:'A hunter stumbles upon drug money and is pursued by a terrifying, unstoppable killer.',score:93},
+      {title:'Pulp Fiction',year:1994,genre:'Crime',desc:'Interconnected stories of hitmen, gangsters, and a boxer collide in Tarantino\'s masterpiece.',score:95},
+    ],
+  };
+
+  let members = [{name:'Alice',genres:[]},{name:'Bob',genres:[]}];
+  let selectedMood = null;
+  let selectedGenres = new Set();
+  let votes = {};
+  let currentMovies = [];
+
+  function renderMembers() {
+    const list = document.getElementById('members-list');
+    if (!members.length) {
+      list.innerHTML = '<p style="font-size:14px;color:#555577;">No members yet. Add someone above.</p>';
+      return;
+    }
+    list.innerHTML = members.map((m, i) => `
+      <div class="member-row">
+        <div class="avatar" style="background:${AVATARS[i%AVATARS.length]};color:${AVATAR_TEXT[i%AVATAR_TEXT.length]}">${m.name[0].toUpperCase()}</div>
+        <span class="member-name">${m.name}</span>
+        <div class="chips">
+          ${GENRES.map(g => `<span class="chip ${m.genres.includes(g)?'selected':''}" onclick="toggleMemberGenre(${i},'${g}')">${g}</span>`).join('')}
+        </div>
+        ${members.length > 1 ? `<button class="remove-btn" onclick="removeMember(${i})" title="Remove">×</button>` : ''}
+      </div>
+    `).join('');
+  }
+
+  function renderMoods() {
+    document.getElementById('mood-grid').innerHTML = MOODS.map((m, i) => `
+      <div class="mood-card ${selectedMood===i?'selected':''}" onclick="selectMood(${i})">
+        <span class="mood-icon">${m.icon}</span>
+        <span class="mood-name">${m.name}</span>
+      </div>
+    `).join('');
+  }
+
+  function renderGlobalGenres() {
+    document.getElementById('global-genres').innerHTML = GENRES.map(g => `
+      <span class="chip ${selectedGenres.has(g)?'selected':''}" onclick="toggleGlobalGenre('${g}')">${g}</span>
+    `).join('');
+  }
+
+  function toggleMemberGenre(i, g) {
+    const m = members[i];
+    m.genres.includes(g) ? m.genres = m.genres.filter(x => x !== g) : m.genres.push(g);
+    renderMembers();
+  }
+
+  function toggleGlobalGenre(g) {
+    selectedGenres.has(g) ? selectedGenres.delete(g) : selectedGenres.add(g);
+    renderGlobalGenres();
+  }
+
+  function selectMood(i) {
+    selectedMood = selectedMood === i ? null : i;
+    renderMoods();
+  }
+
+  function addMember() {
+    const inp = document.getElementById('member-input');
+    const name = inp.value.trim();
+    if (!name) { inp.focus(); return; }
+    if (members.find(m => m.name.toLowerCase() === name.toLowerCase())) {
+      alert('That name is already in the group!'); return;
+    }
+    members.push({name, genres:[]});
+    inp.value = '';
+    renderMembers();
+    inp.focus();
+  }
+
+  function removeMember(i) {
+    members.splice(i, 1);
+    renderMembers();
+  }
+
+  document.addEventListener('DOMContentLoaded', () => {
+    document.getElementById('member-input').addEventListener('keydown', e => {
+      if (e.key === 'Enter') addMember();
+    });
+  });
+
+  function pickMovies() {
+    const pool = new Set([...selectedGenres]);
+    members.forEach(m => m.genres.forEach(g => pool.add(g)));
+
+    if (!pool.size) {
+      alert('Please select at least one genre (either for the group or for individual members).');
+      return;
+    }
+
+    const found = [];
+    pool.forEach(g => { if (MOVIE_DB[g]) found.push(...MOVIE_DB[g]); });
+
+    const unique = Object.values(
+      found.reduce((acc, m) => { if (!acc[m.title]) acc[m.title] = m; return acc; }, {})
+    );
+    unique.sort((a, b) => b.score - a.score);
+
+    currentMovies = unique.slice(0, 5);
+    votes = {};
+    currentMovies.forEach(m => { votes[m.title] = {up:0, down:0}; });
+
+    renderResults();
+    document.getElementById('phase-setup').classList.add('hidden');
+    document.getElementById('phase-results').classList.remove('hidden');
+    document.getElementById('s1').className = 'step done';
+    document.getElementById('s1').textContent = '✓';
+    document.getElementById('s2').className = 'step done';
+    document.getElementById('s2').textContent = '✓';
+    document.getElementById('s3').className = 'step active';
+  }
+
+  function renderResults() {
+    if (!currentMovies.length) {
+      document.getElementById('winner-slot').innerHTML = '<div class="empty">No movies found. Go back and try different genres.</div>';
+      return;
+    }
+
+    const winner = currentMovies[0];
+    const w = votes[winner.title];
+    const total = w.up + w.down || 1;
+    const pct = Math.round((w.up / total) * 100);
+
+    document.getElementById('winner-slot').innerHTML = `
+      <div class="result-card">
+        <div class="result-header">
+          <div class="label">Tonight's pick <span class="winner-badge">🏆 Best match</span></div>
+          <div class="title">${winner.title}</div>
+          <div class="meta">${winner.year} &nbsp;·&nbsp; ${winner.genre} &nbsp;·&nbsp; Score: ${winner.score}/100</div>
+        </div>
+        <div class="result-body">
+          <p class="result-desc">${winner.desc}</p>
+          <div class="vote-section">
+            <div style="font-size:12px;color:#6666aa;margin-bottom:10px;font-weight:600;">GROUP APPROVAL</div>
+            <div class="vote-row">
+              <div class="vote-bar-wrap"><div class="vote-bar" style="width:${pct}%"></div></div>
+              <span class="vote-pct">${pct}%</span>
+              <div class="vote-btns">
+                <button class="vote-btn up" onclick="vote('${winner.title}','up')">👍 ${w.up}</button>
+                <button class="vote-btn down" onclick="vote('${winner.title}','down')">👎 ${w.down}</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+
+    document.getElementById('other-movies').innerHTML = currentMovies.slice(1).map(m => {
+      const v = votes[m.title];
+      const t = v.up + v.down || 1;
+      const p = Math.round((v.up / t) * 100);
+      return `
+        <div class="suggest-card">
+          <div class="suggest-title">${m.title}</div>
+          <div class="suggest-meta">${m.year} · ${m.genre}</div>
+          <div class="score-badge">Score: ${m.score}/100</div>
+          <div style="margin-top:10px;">
+            <div class="vote-row" style="margin-bottom:0;">
+              <div class="vote-bar-wrap" style="height:6px;"><div class="vote-bar" style="width:${p}%"></div></div>
+              <span class="vote-pct">${p}%</span>
+              <div class="vote-btns">
+                <button class="vote-btn up" onclick="vote('${m.title}','up')">👍 ${v.up}</button>
+                <button class="vote-btn down" onclick="vote('${m.title}','down')">👎 ${v.down}</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      `;
+    }).join('');
+  }
+
+  function vote(title, type) {
+    votes[title][type]++;
+    currentMovies.sort((a, b) => {
+      const sa = votes[a.title].up - votes[a.title].down;
+      const sb = votes[b.title].up - votes[b.title].down;
+      return sb - sa;
+    });
+    renderResults();
+  }
+
+  function goBack() {
+    document.getElementById('phase-setup').classList.remove('hidden');
+    document.getElementById('phase-results').classList.add('hidden');
+    document.getElementById('s1').className = 'step active';
+    document.getElementById('s1').textContent = '1';
+    document.getElementById('s2').className = 'step';
+    document.getElementById('s2').textContent = '2';
+    document.getElementById('s3').className = 'step';
+    document.getElementById('s3').textContent = '3';
+  }
+
+  function resetAll() {
+    members = [{name:'Alice',genres:[]},{name:'Bob',genres:[]}];
+    selectedMood = null;
+    selectedGenres = new Set();
+    votes = {};
+    currentMovies = [];
+    goBack();
+    renderMembers();
+    renderMoods();
+    renderGlobalGenres();
+  }
+
+  // Init
+  renderMembers();
+  renderMoods();
+  renderGlobalGenres();
+  document.getElementById('member-input').addEventListener('keydown', e => {
+    if (e.key === 'Enter') addMember();
+  });
+</script>
+</body>
+</html>
